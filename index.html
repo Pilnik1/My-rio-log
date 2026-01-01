@@ -3,33 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rio 3: Бортовой Журнал</title>
+    <title>Rio 3: Точный Журнал</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #121212; color: #e0e0e0; padding: 10px; line-height: 1.4; }
-        .card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        h2 { margin: 0 0 15px 0; font-size: 1rem; color: #ff5252; text-transform: uppercase; letter-spacing: 1px; }
-        input, select { width: 100%; padding: 12px; margin: 5px 0; background: #2d2d2d; border: 1px solid #444; border-radius: 8px; color: white; font-size: 16px; box-sizing: border-box; }
+        .card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
+        h2 { margin: 0 0 15px 0; font-size: 1rem; color: #ff5252; text-transform: uppercase; }
+        input { width: 100%; padding: 12px; margin: 5px 0; background: #2d2d2d; border: 1px solid #444; border-radius: 8px; color: white; font-size: 16px; box-sizing: border-box; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
+        button { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button.alt { background: #454545; margin-top: 5px; }
         button.edit { background: #fbc02d; color: #000; margin-top: 10px; padding: 10px; }
+        button.small { padding: 8px; font-size: 12px; background: #ff9800; color: #000; width: auto; display: inline-block; }
         
-        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto; }
-        .modal { background: #1e1e1e; width: 95%; max-width: 400px; padding: 20px; border-radius: 16px; border: 1px solid #444; text-align: center; margin: auto; }
+        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; width: 95%; max-width: 400px; padding: 20px; border-radius: 16px; border: 1px solid #444; text-align: center; }
         .mode-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 15px 0; }
-        .mode-btn { padding: 10px 5px; font-size: 12px; background: #333; border: 1px solid #555; border-radius: 8px; color: white; cursor: pointer; }
-        .mode-btn.active { background: #d32f2f; border-color: #ff5252; }
+        .mode-btn { padding: 10px 5px; font-size: 12px; background: #333; border: 1px solid #555; border-radius: 8px; color: white; }
+        .mode-btn.active { background: #d32f2f; }
 
         .log-item { background: #252525; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #d32f2f; position: relative; }
         .log-item.pending { border-left-color: #ffeb3b; }
-        .log-service { border-left-color: #2196f3; }
         .val { font-weight: bold; color: #4caf50; }
         .meta { font-size: 0.8rem; color: #aaa; margin-top: 5px; }
-        .mode-tag { font-size: 0.7rem; background: #444; padding: 2px 6px; border-radius: 4px; color: #fff; margin-left: 5px; }
         .del { position: absolute; right: 10px; top: 10px; color: #666; background: none; border: none; font-size: 20px; }
         .summary { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 8px; color: #bbb; }
-        .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 0.75rem; padding: 6px 0; border-top: 1px solid #333; color: #ddd; }
-        label { font-size: 0.7rem; color: #888; margin-left: 5px; display: block; text-align: left; }
+        .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 0.75rem; padding: 6px 0; border-top: 1px solid #333; }
+        label { font-size: 0.7rem; color: #888; display: block; text-align: left; margin-left: 5px; }
         .toggle-box { background: #2d2d2d; padding: 10px; border-radius: 8px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
@@ -37,193 +36,126 @@
 
 <div id="modalOverlay">
     <div class="modal">
-        <h2 style="color: #fbc02d;">Завершение поездки</h2>
-        
+        <h2 style="color: #fbc02d;">Завершение заезда</h2>
         <div class="grid">
             <div><label>Пробег (км)</label><input type="number" id="modalDist" placeholder="км"></div>
-            <div><label>Ср. скор. (км/ч)</label><input type="number" id="modalSpeed" placeholder="км/ч"></div>
+            <div><label>Ср. скорость</label><input type="number" id="modalSpeed" placeholder="км/ч"></div>
         </div>
-
         <div class="toggle-box">
-            <span>⛽ Бак пуст?</span>
-            <input type="checkbox" id="isEmpty" style="width: 30px;" onchange="toggleLeftover()">
+            <span>⛽ Бак выкатан в 0?</span>
+            <input type="checkbox" id="isEmpty" style="width: 25px; height: 25px;" onchange="toggleLeftover()" checked>
         </div>
-
-        <div id="leftoverBox" style="display:none;">
-            <label>Осталось в баке (литров)</label>
-            <input type="number" id="modalLeft" placeholder="л">
+        <div id="leftoverBox" style="display:none; text-align: left;">
+            <label>Осталось в баке (л)</label>
+            <input type="number" id="modalLeft" placeholder="Сколько осталось">
+            <button class="small" onclick="document.getElementById('modalLeft').value=6">⛽ Лампа (~6л)</button>
         </div>
-
         <label style="margin-top:10px;">Цикл езды</label>
-        <div class="mode-buttons" id="modalModes">
-            <div class="mode-btn" onclick="selectMode('City', this)">🏙️<br>Город</div>
-            <div class="mode-btn" onclick="selectMode('Highway', this)">🛣️<br>Трасса</div>
-            <div class="mode-btn" onclick="selectMode('Mixed', this)">🔄<br>Смеш.</div>
+        <div class="mode-buttons">
+            <div class="mode-btn" onclick="selectMode('City', this)">🏙️ Город</div>
+            <div class="mode-btn" onclick="selectMode('Highway', this)">🛣️ Трасса</div>
+            <div class="mode-btn" onclick="selectMode('Mixed', this)">🔄 Смеш.</div>
         </div>
-
-        <button onclick="finishEntry()">СОХРАНИТЬ</button>
+        <button onclick="finishEntry()">СОХРАНИТЬ ДАННЫЕ</button>
         <button class="alt" onclick="closeModal()">ОТМЕНА</button>
     </div>
 </div>
 
 <div class="card">
-    <h2>Новая заправка</h2>
+    <h2>Заправка</h2>
     <div class="grid">
-        <div><label>Дата</label><input type="date" id="fuelDate"></div>
-        <div><label>Литры (сколько залил)</label><input type="number" id="liters" placeholder="Литры"></div>
+        <div><label>Дата</label><input type="date" id="fDate"></div>
+        <div><label>Залил литров</label><input type="number" id="fLiters"></div>
     </div>
-    <div><label>Сумма BYN</label><input type="number" id="cost" placeholder="BYN"></div>
-    <input type="text" id="note" placeholder="Заметка...">
-    <button onclick="addFuel()">ДОБАВИТЬ В ЖУРНАЛ</button>
-</div>
-
-<div class="card" style="border-left-color: #2196f3;">
-    <h2>Прочие расходы</h2>
-    <input type="date" id="serviceDate">
-    <input type="text" id="serviceName" placeholder="На что?">
-    <input type="number" id="serviceCost" placeholder="Сумма">
-    <button class="alt" onclick="addService()">ЗАПИСАТЬ</button>
+    <label>Сумма BYN</label><input type="number" id="fCost">
+    <input type="text" id="fNote" placeholder="Заметка...">
+    <button onclick="addFuel()">ДОБАВИТЬ</button>
 </div>
 
 <div id="stats" class="card">
-    <h2>Общая статистика</h2>
+    <h2>Статистика</h2>
     <div id="totalSummary"></div>
 </div>
 
 <div id="logs"></div>
 
 <script>
-    let fuelLog = JSON.parse(localStorage.getItem('rio_pro_log')) || [];
-    let currentEditId = null;
-    let selectedModalMode = null;
-    const modeLabels = { 'City': '🏙️ Город', 'Highway': '🛣️ Трасса', 'Mixed': '🔄 Смеш.' };
+    let fuelLog = JSON.parse(localStorage.getItem('rio_final_log')) || [];
+    let curId = null;
+    let curMode = null;
 
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('fuelDate').value = today;
-    document.getElementById('serviceDate').value = today;
+    document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
 
     function toggleLeftover() {
-        const isEmp = document.getElementById('isEmpty').checked;
-        document.getElementById('leftoverBox').style.display = isEmp ? 'none' : 'block';
+        document.getElementById('leftoverBox').style.display = document.getElementById('isEmpty').checked ? 'none' : 'block';
     }
 
-    function selectMode(mode, btn) {
-        selectedModalMode = mode;
+    function selectMode(m, btn) {
+        curMode = m;
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
     }
 
     function addFuel() {
-        const liters = parseFloat(document.getElementById('liters').value);
-        const cost = parseFloat(document.getElementById('cost').value);
-        if(!liters || !cost) return alert('Введи литры и сумму!');
-        const entry = {
-            id: Date.now(), type: 'fuel', date: new Date(document.getElementById('fuelDate').value).toLocaleDateString(),
-            liters: liters, cost: cost, dist: null, mode: null, speed: null, leftover: 0,
-            note: document.getElementById('note').value, isCompleted: false
-        };
-        save(entry);
+        const l = parseFloat(document.getElementById('fLiters').value);
+        const c = parseFloat(document.getElementById('fCost').value);
+        if(!l || !c) return alert('Заполни литры и цену!');
+        fuelLog.unshift({
+            id: Date.now(), date: new Date(document.getElementById('fDate').value).toLocaleDateString(),
+            liters: l, cost: c, dist: null, mode: null, speed: null, left: 0, isCompleted: false, note: document.getElementById('fNote').value
+        });
+        save();
     }
 
-    function openModal(id) { 
-        currentEditId = id; 
-        document.getElementById('modalOverlay').style.display = 'flex'; 
-        document.getElementById('isEmpty').checked = true;
-        toggleLeftover();
-    }
-
-    function closeModal() { 
-        document.getElementById('modalOverlay').style.display = 'none'; 
-        selectedModalMode = null;
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-    }
+    function openModal(id) { curId = id; document.getElementById('modalOverlay').style.display = 'flex'; }
+    function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; curMode = null; }
 
     function finishEntry() {
-        const km = parseFloat(document.getElementById('modalDist').value);
-        const left = document.getElementById('isEmpty').checked ? 0 : parseFloat(document.getElementById('modalLeft').value || 0);
-        
-        if(!km) return alert('Введи пробег!');
-        if(!selectedModalMode) return alert('Выбери цикл езды!');
-
-        const idx = fuelLog.findIndex(i => i.id === currentEditId);
-        if (idx !== -1) {
-            fuelLog[idx].dist = km;
-            fuelLog[idx].mode = selectedModalMode;
-            fuelLog[idx].leftover = left;
-            fuelLog[idx].speed = parseFloat(document.getElementById('modalSpeed').value) || null;
-            fuelLog[idx].isCompleted = true;
-            localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog));
-            closeModal(); render();
-        }
+        const d = parseFloat(document.getElementById('modalDist').value);
+        const l = document.getElementById('isEmpty').checked ? 0 : parseFloat(document.getElementById('modalLeft').value || 0);
+        if(!d || !curMode) return alert('Введи пробег и выбери цикл!');
+        const i = fuelLog.findIndex(x => x.id === curId);
+        fuelLog[i] = {...fuelLog[i], dist: d, mode: curMode, left: l, speed: document.getElementById('modalSpeed').value, isCompleted: true};
+        save(); closeModal();
     }
 
-    function addService() {
-        const entry = {
-            id: Date.now(), type: 'service', date: new Date(document.getElementById('serviceDate').value).toLocaleDateString(),
-            name: document.getElementById('serviceName').value, cost: parseFloat(document.getElementById('serviceCost').value)
-        };
-        if(!entry.name || !entry.cost) return alert('Введи данные!');
-        save(entry);
-    }
-
-    function save(entry) {
-        fuelLog.unshift(entry);
-        localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog));
+    function save() {
+        localStorage.setItem('rio_final_log', JSON.stringify(fuelLog));
         render();
     }
 
-    function deleteEntry(id) {
-        if(confirm('Удалить?')) { fuelLog = fuelLog.filter(i => i.id !== id); localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog)); render(); }
-    }
+    function deleteEntry(id) { if(confirm('Удалить?')) { fuelLog = fuelLog.filter(x => x.id !== id); save(); } }
 
     function render() {
         const container = document.getElementById('logs');
         const statsBox = document.getElementById('totalSummary');
         container.innerHTML = '';
-        let totalCash = 0, totalDist = 0, totalLitersUsed = 0;
-        let cycleStats = { City: { l: 0, d: 0, c: 0 }, Highway: { l: 0, d: 0, c: 0 }, Mixed: { l: 0, d: 0, c: 0 } };
+        let tCash = 0, tDist = 0, tLiters = 0;
+        let cStats = { City: {l:0, d:0, c:0}, Highway: {l:0, d:0, c:0}, Mixed: {l:0, d:0, c:0} };
 
-        fuelLog.forEach((item) => {
-            totalCash += item.cost;
-            if(item.type === 'fuel') {
-                const isPending = !item.isCompleted;
-                let content = `<div class="log-item ${isPending ? 'pending' : ''}">
-                    <button class="del" onclick="deleteEntry(${item.id})">×</button>
-                    <div>${item.date} ${item.mode ? `<span class="mode-tag">${modeLabels[item.mode]}</span>` : ''}</div>
-                    <div style="margin-top:5px;"><span class="val">${item.liters}л на ${item.cost} BYN</span></div>`;
-
-                if(!isPending) {
-                    const usedLiters = item.liters - (item.leftover || 0);
-                    totalDist += item.dist; totalLitersUsed += usedLiters;
-                    cycleStats[item.mode].l += usedLiters;
-                    cycleStats[item.mode].d += item.dist;
-                    cycleStats[item.mode].c += item.cost;
-                    
-                    const cons = ((usedLiters / item.dist) * 100).toFixed(1);
-                    content += `<div class="meta" style="color: #4caf50; font-weight: bold;">Расход: ${cons} л/100км ${item.leftover > 0 ? '(с уч. остатка)' : ''}</div>
-                                <div class="meta">Цена км: ${(item.cost / item.dist).toFixed(2)} BYN ${item.speed ? '| Скор: ' + item.speed : ''}</div>`;
-                } else {
-                    content += `<button class="edit" onclick="openModal(${item.id})">ВНЕСТИ ДАННЫЕ</button>`;
-                }
-                if(item.note) content += `<div class="meta">Заметка: ${item.note}</div>`;
-                container.innerHTML += content + `</div>`;
+        fuelLog.forEach(item => {
+            tCash += item.cost;
+            let html = `<div class="log-item ${!item.isCompleted ? 'pending' : ''}">
+                <button class="del" onclick="deleteEntry(${item.id})">×</button>
+                <div>${item.date} ${item.mode ? `<b style="font-size:10px; background:#444; padding:2px 5px; border-radius:4px;">${item.mode}</b>` : ''}</div>
+                <div class="val">${item.liters}л за ${item.cost} BYN</div>`;
+            
+            if(item.isCompleted) {
+                const used = item.liters - item.left;
+                tDist += item.dist; tLiters += used;
+                cStats[item.mode].l += used; cStats[item.mode].d += item.dist; cStats[item.mode].c += item.cost;
+                html += `<div class="meta" style="color:#4caf50">Расход: <b>${((used/item.dist)*100).toFixed(1)}</b> л/100км</div>`;
             } else {
-                container.innerHTML += `<div class="log-item log-service">
-                    <button class="del" onclick="deleteEntry(${item.id})">×</button>
-                    <div>${item.date} — <span class="val" style="color:#2196f3">${item.name}</span></div>
-                    <div class="meta">Потрачено: ${item.cost} BYN</div>
-                </div>`;
+                html += `<button class="edit" onclick="openModal(${item.id})">ВНЕСТИ ПРОБЕГ</button>`;
             }
+            container.innerHTML += html + `</div>`;
         });
 
-        let statsHTML = `<div class="summary"><span>Всего трат:</span> <b>${totalCash.toFixed(2)} BYN</b></div>
-            <div class="summary"><span>Общий ср. расход:</span> <b>${totalDist > 0 ? ((totalLitersUsed/totalDist)*100).toFixed(1) : 0} л/100км</b></div>
-            <div style="margin-top:10px; color:#ff5252; font-size:0.75rem; font-weight:bold; text-transform:uppercase;">Аналитика по циклам:</div>`;
-
-        for (let m in cycleStats) {
-            if (cycleStats[m].d > 0) {
-                const avg = ((cycleStats[m].l / cycleStats[m].d) * 100).toFixed(1);
-                statsHTML += `<div class="stat-row"><span>${modeLabels[m]}</span><b style="color:#4caf50">${avg} л</b><b>${cycleStats[m].c.toFixed(1)} BYN</b></div>`;
+        let statsHTML = `<div class="summary"><span>Траты:</span> <b>${tCash.toFixed(1)} BYN</b></div>
+                         <div class="summary"><span>Ср. расход:</span> <b>${tDist > 0 ? ((tLiters/tDist)*100).toFixed(1) : 0} л</b></div>`;
+        for (let m in cStats) {
+            if (cStats[m].d > 0) {
+                statsHTML += `<div class="stat-row"><span>${m}</span><b>${((cStats[m].l/cStats[m].d)*100).toFixed(1)} л</b><b>${cStats[m].c.toFixed(0)} BYN</b></div>`;
             }
         }
         statsBox.innerHTML = statsHTML;
@@ -232,4 +164,4 @@
 </script>
 </body>
 </html>
- 
+
