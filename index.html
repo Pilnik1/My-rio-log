@@ -13,6 +13,14 @@
         button { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
         button.alt { background: #454545; margin-top: 5px; }
         button.edit { background: #fbc02d; color: #000; margin-top: 10px; padding: 10px; }
+        
+        /* Стили модального окна */
+        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; width: 90%; max-width: 400px; padding: 20px; border-radius: 16px; border: 1px solid #444; text-align: center; }
+        .mode-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .mode-btn { padding: 10px 5px; font-size: 12px; background: #333; border: 1px solid #555; border-radius: 8px; color: white; cursor: pointer; }
+        .mode-btn:active { background: #d32f2f; }
+
         .log-item { background: #252525; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #d32f2f; position: relative; }
         .log-item.pending { border-left-color: #ffeb3b; }
         .log-service { border-left-color: #2196f3; }
@@ -25,6 +33,21 @@
     </style>
 </head>
 <body>
+
+<div id="modalOverlay">
+    <div class="modal">
+        <h2 style="color: #fbc02d;">Завершение записи</h2>
+        <label>Пройденный путь (км)</label>
+        <input type="number" id="modalDist" placeholder="Введите км">
+        <label>Выберите цикл езды</label>
+        <div class="mode-buttons">
+            <div class="mode-btn" onclick="finishEntry('City')">🏙️<br>Город</div>
+            <div class="mode-btn" onclick="finishEntry('Highway')">🛣️<br>Трасса</div>
+            <div class="mode-btn" onclick="finishEntry('Mixed')">🔄<br>Смеш.</div>
+        </div>
+        <button class="alt" onclick="closeModal()">ОТМЕНА</button>
+    </div>
+</div>
 
 <div class="card">
     <h2>Заправка / Поездка</h2>
@@ -72,21 +95,21 @@
     document.getElementById('serviceDate').value = today;
 
     let fuelLog = JSON.parse(localStorage.getItem('rio_pro_log')) || [];
+    let currentEditId = null;
     const modeLabels = { 'City': '🏙️ Город', 'Highway': '🛣️ Трасса', 'Mixed': '🔄 Смеш.', 'Later': '⏳ Позже' };
 
     function addFuel() {
         const liters = parseFloat(document.getElementById('liters').value);
         const cost = parseFloat(document.getElementById('cost').value);
         const dist = parseFloat(document.getElementById('dist').value);
-        const dateVal = document.getElementById('fuelDate').value;
         const mode = document.getElementById('driveMode').value;
 
-        if(!liters || !cost) return alert('Введи хотя бы литры и сумму!');
+        if(!liters || !cost) return alert('Введи литры и сумму!');
 
         const entry = {
             id: Date.now(),
             type: 'fuel',
-            date: dateVal ? new Date(dateVal).toLocaleDateString() : new Date().toLocaleDateString(),
+            date: new Date(document.getElementById('fuelDate').value).toLocaleDateString(),
             liters: liters,
             cost: cost,
             dist: dist || null,
@@ -95,55 +118,58 @@
             note: document.getElementById('note').value,
             isCompleted: !!dist && mode !== 'Later'
         };
-        
         save(entry);
+    }
+
+    function openModal(id) {
+        currentEditId = id;
+        document.getElementById('modalOverlay').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('modalOverlay').style.display = 'none';
+        document.getElementById('modalDist').value = '';
+    }
+
+    function finishEntry(selectedMode) {
+        const km = parseFloat(document.getElementById('modalDist').value);
+        if(!km) return alert('Введи пробег!');
+
+        const index = fuelLog.findIndex(item => item.id === currentEditId);
+        if (index !== -1) {
+            fuelLog[index].dist = km;
+            fuelLog[index].mode = selectedMode;
+            fuelLog[index].isCompleted = true;
+            localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog));
+            closeModal();
+            render();
+        }
     }
 
     function addService() {
-        const dateVal = document.getElementById('serviceDate').value;
         const entry = {
             id: Date.now(),
             type: 'service',
-            date: dateVal ? new Date(dateVal).toLocaleDateString() : new Date().toLocaleDateString(),
+            date: new Date(document.getElementById('serviceDate').value).toLocaleDateString(),
             name: document.getElementById('serviceName').value,
             cost: parseFloat(document.getElementById('serviceCost').value)
         };
-        if(!entry.name || !entry.cost) return alert('Введи название и сумму!');
+        if(!entry.name || !entry.cost) return alert('Введи данные!');
         save(entry);
-    }
-
-    function completeDist(id) {
-        const km = prompt("Введите пройденное расстояние (км):");
-        if (km === null || km === "") return;
-        
-        const modeChoice = prompt("Выберите цикл: 1 - Город, 2 - Трасса, 3 - Смешанный");
-        let newMode = 'Mixed';
-        if (modeChoice === '1') newMode = 'City';
-        if (modeChoice === '2') newMode = 'Highway';
-
-        const index = fuelLog.findIndex(item => item.id === id);
-        if (index !== -1) {
-            fuelLog[index].dist = parseFloat(km);
-            fuelLog[index].mode = newMode;
-            fuelLog[index].isCompleted = true;
-            localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog));
-            render();
-        }
     }
 
     function save(entry) {
         fuelLog.unshift(entry);
         localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog));
-        document.getElementById('liters').value = '';
-        document.getElementById('cost').value = '';
-        document.getElementById('dist').value = '';
-        document.getElementById('speed').value = '';
-        document.getElementById('note').value = '';
+        ['liters','cost','dist','speed','note','serviceName','serviceCost'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.value = '';
+        });
         render();
     }
 
     function deleteEntry(id) {
-        if(confirm('Удалить запись?')) {
+        if(confirm('Удалить?')) {
             fuelLog = fuelLog.filter(item => item.id !== id);
             localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog));
             render();
@@ -168,42 +194,32 @@
                 `;
 
                 if(!isPending) {
-                    totalDist += item.dist;
-                    totalLiters += item.liters;
+                    totalDist += item.dist; totalLiters += item.liters;
                     const cons = ((item.liters / item.dist) * 100).toFixed(1);
-                    const rubKm = (item.cost / item.dist).toFixed(2);
-                    content += `
-                        <div class="meta" style="color: #4caf50; font-weight: bold;">Расход: ${cons} л/100км</div>
-                        <div class="meta">Цена км: ${rubKm} BYN ${item.speed ? '| Скор: ' + item.speed + ' км/ч' : ''}</div>
-                    `;
+                    content += `<div class="meta" style="color: #4caf50; font-weight: bold;">Расход: ${cons} л/100км</div>`;
                 } else {
-                    content += `
-                        <div class="meta" style="color: #ffeb3b;">Ожидание данных...</div>
-                        <button class="edit" onclick="completeDist(${item.id})">ВНЕСТИ ДАННЫЕ</button>
-                    `;
+                    content += `<button class="edit" onclick="openModal(${item.id})">ВНЕСТИ ДАННЫЕ</button>`;
                 }
                 if(item.note) content += `<div class="meta">Заметка: ${item.note}</div>`;
-                content += `</div>`;
-                container.innerHTML += content;
+                container.innerHTML += content + `</div>`;
             } else {
                 container.innerHTML += `
                     <div class="log-item log-service">
                         <button class="del" onclick="deleteEntry(${item.id})">×</button>
                         <div>${item.date} — <span class="val" style="color:#2196f3">${item.name}</span></div>
                         <div class="meta">Потрачено: ${item.cost} BYN</div>
-                    </div>
-                `;
+                    </div>`;
             }
         });
 
         statsBox.innerHTML = `
-            <div class="summary"><span>Всего потрачено:</span> <b>${totalCash.toFixed(2)} BYN</b></div>
+            <div class="summary"><span>Траты:</span> <b>${totalCash.toFixed(2)} BYN</b></div>
             <div class="summary"><span>Общий пробег:</span> <b>${totalDist.toFixed(1)} км</b></div>
-            <div class="summary"><span>Средний расход:</span> <b>${totalDist > 0 ? ((totalLiters/totalDist)*100).toFixed(1) : 0} л/100км</b></div>
+            <div class="summary"><span>Ср. расход:</span> <b>${totalDist > 0 ? ((totalLiters/totalDist)*100).toFixed(1) : 0} л/100км</b></div>
         `;
     }
     render();
 </script>
 </body>
 </html>
- 
+
