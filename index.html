@@ -1,205 +1,198 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal AutoLog: Режимы и Расход</title>
+    <title>Rio 3: Бортовой Журнал</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #121212; color: #e0e0e0; padding: 10px; line-height: 1.4; }
         .card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         h2 { margin: 0 0 15px 0; font-size: 1rem; color: #ff5252; text-transform: uppercase; letter-spacing: 1px; }
-        select, input { width: 100%; padding: 12px; margin: 5px 0; background: #2d2d2d; border: 1px solid #444; border-radius: 8px; color: white; font-size: 16px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 12px; margin: 5px 0; background: #2d2d2d; border: 1px solid #444; border-radius: 8px; color: white; font-size: 16px; box-sizing: border-box; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         button { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
+        button.alt { background: #454545; margin-top: 5px; }
+        button.edit { background: #fbc02d; color: #000; margin-top: 10px; padding: 10px; }
         .log-item { background: #252525; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #d32f2f; position: relative; }
         .log-item.pending { border-left-color: #ffeb3b; }
+        .log-service { border-left-color: #2196f3; }
         .val { font-weight: bold; color: #4caf50; }
         .meta { font-size: 0.8rem; color: #aaa; margin-top: 5px; }
-        .mode-badge { font-size: 0.7rem; background: #444; padding: 2px 6px; border-radius: 4px; color: #fff; margin-left: 5px; }
+        .mode-tag { font-size: 0.7rem; background: #444; padding: 2px 6px; border-radius: 4px; color: #fff; margin-left: 5px; }
         .del { position: absolute; right: 10px; top: 10px; color: #666; background: none; border: none; font-size: 20px; }
         .summary { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 10px; color: #bbb; }
-        .btn-backup { background: #444; font-size: 12px; padding: 10px; margin-top: 5px; }
+        label { font-size: 0.7rem; color: #888; margin-left: 5px; }
     </style>
 </head>
 <body>
 
-<div class="card" style="border-color: #2196f3;">
-    <h2>🚗 Мой Автомобиль</h2>
-    <select id="carBrand" onchange="saveCarInfo()">
-        <option value="">Выберите марку</option>
-        <option value="Audi">Audi</option>
-        <option value="BMW">BMW</option>
-        <option value="Citroen">Citroen</option>
-        <option value="Ford">Ford</option>
-        <option value="Geely">Geely</option>
-        <option value="Honda">Honda</option>
-        <option value="Hyundai">Hyundai</option>
-        <option value="Kia">Kia</option>
-        <option value="Lada">Lada</option>
-        <option value="Mazda">Mazda</option>
-        <option value="Mercedes">Mercedes</option>
-        <option value="Mitsubishi">Mitsubishi</option>
-        <option value="Nissan">Nissan</option>
-        <option value="Opel">Opel</option>
-        <option value="Peugeot">Peugeot</option>
-        <option value="Renault">Renault</option>
-        <option value="Skoda">Skoda</option>
-        <option value="Toyota">Toyota</option>
-        <option value="Volkswagen">Volkswagen</option>
-        <option value="Volvo">Volvo</option>
-    </select>
-    <input type="text" id="carModel" placeholder="Модель (например, Rio 3)" oninput="saveCarInfo()">
+<div class="card">
+    <h2>Заправка / Поездка</h2>
+    <div class="grid">
+        <div><label>Дата</label><input type="date" id="fuelDate"></div>
+        <div><label>Литры</label><input type="number" id="liters" placeholder="Литры"></div>
+    </div>
+    <div class="grid">
+        <div><label>Сумма BYN</label><input type="number" id="cost" placeholder="Сумма"></div>
+        <div><label>Цикл езды</label>
+            <select id="driveMode">
+                <option value="City">🏙️ Город</option>
+                <option value="Highway">🛣️ Трасса</option>
+                <option value="Mixed">🔄 Смешанный</option>
+            </select>
+        </div>
+    </div>
+    <div class="grid">
+        <div><label>Ср. скор. (км/ч)</label><input type="number" id="speed" placeholder="км/ч"></div>
+        <div><label>Пробег (км)</label><input type="number" id="dist" placeholder="За поездку"></div>
+    </div>
+    <input type="text" id="note" placeholder="Заметка (АЗС, АИ-95...)">
+    <button onclick="addFuel()">ДОБАВИТЬ ЗАПРАВКУ</button>
 </div>
 
-<div class="card">
-    <h2>⛽ Новая заправка</h2>
-    <input type="date" id="fuelDate">
-    <div class="grid">
-        <input type="number" id="liters" placeholder="Литры">
-        <input type="number" id="cost" placeholder="Сумма BYN">
-    </div>
-    <input type="number" id="dist" placeholder="Пробег за поездку (км)">
-    
-    <h3 style="font-size: 0.8rem; color: #aaa; margin: 10px 0 5px;">Режим езды:</h3>
-    <select id="driveMode">
-        <option value="City">🏙️ Город</option>
-        <option value="Highway">🛣️ Трасса</option>
-        <option value="Mixed">🔄 Смешанный</option>
-    </select>
-    
-    <button onclick="addFuel()">ДОБАВИТЬ ЗАПИСЬ</button>
+<div class="card" style="border-left-color: #2196f3;">
+    <h2>Прочие расходы</h2>
+    <input type="date" id="serviceDate">
+    <input type="text" id="serviceName" placeholder="На что потратил?">
+    <input type="number" id="serviceCost" placeholder="Сумма (BYN)">
+    <button class="alt" onclick="addService()">ЗАПИСАТЬ ТРАТУ</button>
 </div>
 
 <div id="stats" class="card">
-    <h2>📊 Статистика <span id="displayCar"></span></h2>
+    <h2>Общая статистика</h2>
     <div id="totalSummary"></div>
 </div>
 
 <div id="logs"></div>
 
-<div class="grid">
-    <button class="btn-backup" onclick="exportData()">💾 БЭКАП</button>
-    <button class="btn-backup" onclick="importData()">📂 ЗАГРУЗИТЬ</button>
-</div>
-<input type="file" id="fileInput" style="display:none" onchange="handleFile(event)">
-
 <script>
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('fuelDate').value = today;
+    document.getElementById('serviceDate').value = today;
 
-    // Поддержка обоих ключей хранилища для совместимости
-    let fuelLog = JSON.parse(localStorage.getItem('universal_car_log')) || [];
-    let carInfo = JSON.parse(localStorage.getItem('car_info')) || { brand: '', model: '' };
-
-    document.getElementById('carBrand').value = carInfo.brand;
-    document.getElementById('carModel').value = carInfo.model;
-
+    let fuelLog = JSON.parse(localStorage.getItem('rio_pro_log')) || [];
     const modeLabels = { 'City': '🏙️ Город', 'Highway': '🛣️ Трасса', 'Mixed': '🔄 Смеш.' };
-
-    function saveCarInfo() {
-        carInfo.brand = document.getElementById('carBrand').value;
-        carInfo.model = document.getElementById('carModel').value;
-        localStorage.setItem('car_info', JSON.stringify(carInfo));
-        render();
-    }
 
     function addFuel() {
         const liters = parseFloat(document.getElementById('liters').value);
         const cost = parseFloat(document.getElementById('cost').value);
         const dist = parseFloat(document.getElementById('dist').value);
+        const dateVal = document.getElementById('fuelDate').value;
         const mode = document.getElementById('driveMode').value;
-        
-        if(!liters || !cost) return alert('Введи данные!');
+
+        if(!liters || !cost) return alert('Введи хотя бы литры и сумму!');
 
         const entry = {
             id: Date.now(),
-            date: new Date(document.getElementById('fuelDate').value).toLocaleDateString(),
+            type: 'fuel',
+            date: dateVal ? new Date(dateVal).toLocaleDateString() : new Date().toLocaleDateString(),
             liters: liters,
             cost: cost,
             dist: dist || null,
             mode: mode,
+            speed: parseFloat(document.getElementById('speed').value) || null,
+            note: document.getElementById('note').value,
             isCompleted: !!dist
         };
-        fuelLog.unshift(entry);
-        save();
-        document.getElementById('liters').value = '';
-        document.getElementById('cost').value = '';
-        document.getElementById('dist').value = '';
+        
+        save(entry);
+    }
+
+    function addService() {
+        const dateVal = document.getElementById('serviceDate').value;
+        const entry = {
+            id: Date.now(),
+            type: 'service',
+            date: dateVal ? new Date(dateVal).toLocaleDateString() : new Date().toLocaleDateString(),
+            name: document.getElementById('serviceName').value,
+            cost: parseFloat(document.getElementById('serviceCost').value)
+        };
+        if(!entry.name || !entry.cost) return alert('Введи название и сумму!');
+        save(entry);
     }
 
     function completeDist(id) {
-        const km = prompt("Введите пробег (км):");
-        if (km) {
-            const idx = fuelLog.findIndex(i => i.id === id);
-            fuelLog[idx].dist = parseFloat(km);
-            fuelLog[idx].isCompleted = true;
-            save();
+        const km = prompt("Введите пройденное расстояние (км):");
+        if (km === null || km === "") return;
+        const index = fuelLog.findIndex(item => item.id === id);
+        if (index !== -1) {
+            fuelLog[index].dist = parseFloat(km);
+            fuelLog[index].isCompleted = true;
+            localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog));
+            render();
         }
     }
 
-    function save() {
-        localStorage.setItem('universal_car_log', JSON.stringify(fuelLog));
+    function save(entry) {
+        fuelLog.unshift(entry);
+        localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog));
+        document.getElementById('liters').value = '';
+        document.getElementById('cost').value = '';
+        document.getElementById('dist').value = '';
+        document.getElementById('speed').value = '';
+        document.getElementById('note').value = '';
         render();
     }
 
     function deleteEntry(id) {
-        if(confirm('Удалить?')) {
-            fuelLog = fuelLog.filter(i => i.id !== id);
-            save();
+        if(confirm('Удалить запись?')) {
+            fuelLog = fuelLog.filter(item => item.id !== id);
+            localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog));
+            render();
         }
-    }
-
-    function exportData() {
-        const data = { logs: fuelLog, car: carInfo };
-        const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `car_log_backup.json`;
-        a.click();
-    }
-
-    function importData() { document.getElementById('fileInput').click(); }
-
-    function handleFile(event) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const imported = JSON.parse(e.target.result);
-            fuelLog = imported.logs || [];
-            carInfo = imported.car || { brand: '', model: '' };
-            saveCarInfo();
-            save();
-        };
-        reader.readAsText(event.target.files[0]);
     }
 
     function render() {
         const container = document.getElementById('logs');
         const statsBox = document.getElementById('totalSummary');
-        document.getElementById('displayCar').innerText = `${carInfo.brand} ${carInfo.model}`;
         container.innerHTML = '';
-        let tCash = 0, tDist = 0, tLiters = 0;
+        let totalCash = 0, totalDist = 0, totalLiters = 0;
 
         fuelLog.forEach((item) => {
-            tCash += item.cost;
-            const isPending = !item.isCompleted;
-            let html = `<div class="log-item ${isPending ? 'pending' : ''}">
-                <button class="del" onclick="deleteEntry(${item.id})">×</button>
-                <div>${item.date} <span class="mode-badge">${modeLabels[item.mode] || ''}</span></div>
-                <div style="margin-top:5px;"><span class="val">${item.liters}л / ${item.cost} BYN</span></div>`;
-            
-            if(!isPending) {
-                tDist += item.dist; tLiters += item.liters;
-                const cons = ((item.liters / item.dist) * 100).toFixed(1);
-                html += `<div class="meta">Расход: <b>${cons} л/100км</b></div>`;
+            totalCash += item.cost;
+            if(item.type === 'fuel') {
+                const isPending = !item.isCompleted;
+                let content = `
+                    <div class="log-item ${isPending ? 'pending' : ''}">
+                        <button class="del" onclick="deleteEntry(${item.id})">×</button>
+                        <div>${item.date} <span class="mode-tag">${modeLabels[item.mode] || ''}</span></div>
+                        <div style="margin-top:5px;"><span class="val">${item.liters}л на ${item.cost} BYN</span></div>
+                `;
+
+                if(!isPending) {
+                    totalDist += item.dist;
+                    totalLiters += item.liters;
+                    const cons = ((item.liters / item.dist) * 100).toFixed(1);
+                    const rubKm = (item.cost / item.dist).toFixed(2);
+                    content += `
+                        <div class="meta" style="color: #4caf50; font-weight: bold;">Расход: ${cons} л/100км</div>
+                        <div class="meta">Цена км: ${rubKm} BYN ${item.speed ? '| Скор: ' + item.speed + ' км/ч' : ''}</div>
+                    `;
+                } else {
+                    content += `
+                        <div class="meta" style="color: #ffeb3b;">Ожидание пробега...</div>
+                        <button class="edit" onclick="completeDist(${item.id})">ВНЕСТИ ПРОБЕГ</button>
+                    `;
+                }
+                if(item.note) content += `<div class="meta">Заметка: ${item.note}</div>`;
+                content += `</div>`;
+                container.innerHTML += content;
             } else {
-                html += `<button style="padding:5px; font-size:12px; background:#fbc02d; color:black; border:none; border-radius:4px; margin-top:5px;" onclick="completeDist(${item.id})">ВНЕСТИ ПРОБЕГ</button>`;
+                container.innerHTML += `
+                    <div class="log-item log-service">
+                        <button class="del" onclick="deleteEntry(${item.id})">×</button>
+                        <div>${item.date} — <span class="val" style="color:#2196f3">${item.name}</span></div>
+                        <div class="meta">Потрачено: ${item.cost} BYN</div>
+                    </div>
+                `;
             }
-            container.innerHTML += html + `</div>`;
         });
 
         statsBox.innerHTML = `
-            <div class="summary"><span>Траты:</span> <b>${tCash.toFixed(2)} BYN</b></div>
-            <div class="summary"><span>Ср. расход:</span> <b>${tDist > 0 ? ((tLiters/tDist)*100).toFixed(1) : 0} л/100км</b></div>
+            <div class="summary"><span>Всего потрачено:</span> <b>${totalCash.toFixed(2)} BYN</b></div>
+            <div class="summary"><span>Общий пробег:</span> <b>${totalDist.toFixed(1)} км</b></div>
+            <div class="summary"><span>Средний расход:</span> <b>${totalDist > 0 ? ((totalLiters/totalDist)*100).toFixed(1) : 0} л/100км</b></div>
         `;
     }
     render();
