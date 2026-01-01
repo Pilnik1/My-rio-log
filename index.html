@@ -3,31 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rio 3: Точный Журнал</title>
+    <title>Rio 3: Бортовой Журнал</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #121212; color: #e0e0e0; padding: 10px; line-height: 1.4; }
-        .card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
-        h2 { margin: 0 0 15px 0; font-size: 1rem; color: #ff5252; text-transform: uppercase; }
+        .card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h2 { margin: 0 0 15px 0; font-size: 1rem; color: #ff5252; text-transform: uppercase; letter-spacing: 1px; }
         input { width: 100%; padding: 12px; margin: 5px 0; background: #2d2d2d; border: 1px solid #444; border-radius: 8px; color: white; font-size: 16px; box-sizing: border-box; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
         button.alt { background: #454545; margin-top: 5px; }
-        button.edit { background: #fbc02d; color: #000; margin-top: 10px; padding: 10px; }
-        button.small { padding: 8px; font-size: 12px; background: #ff9800; color: #000; width: auto; display: inline-block; }
+        button.edit { background: #fbc02d; color: #000; margin-top: 10px; padding: 10px; font-size: 14px; }
+        button.small { padding: 8px; font-size: 12px; background: #ff9800; color: #000; width: auto; margin-top: 5px; }
         
+        /* Модалка */
         #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; }
         .modal { background: #1e1e1e; width: 95%; max-width: 400px; padding: 20px; border-radius: 16px; border: 1px solid #444; text-align: center; }
+        
         .mode-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 15px 0; }
-        .mode-btn { padding: 10px 5px; font-size: 12px; background: #333; border: 1px solid #555; border-radius: 8px; color: white; }
-        .mode-btn.active { background: #d32f2f; }
+        .mode-btn { padding: 10px 5px; font-size: 12px; background: #333; border: 1px solid #555; border-radius: 8px; color: white; cursor: pointer; }
+        .mode-btn.active { background: #d32f2f; border-color: #ff5252; }
 
         .log-item { background: #252525; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #d32f2f; position: relative; }
         .log-item.pending { border-left-color: #ffeb3b; }
-        .val { font-weight: bold; color: #4caf50; }
+        .val { font-weight: bold; color: #4caf50; font-size: 1.1rem; }
         .meta { font-size: 0.8rem; color: #aaa; margin-top: 5px; }
+        .mode-tag { font-size: 0.7rem; background: #444; padding: 2px 6px; border-radius: 4px; color: #fff; margin-left: 5px; }
         .del { position: absolute; right: 10px; top: 10px; color: #666; background: none; border: none; font-size: 20px; }
+        
         .summary { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 8px; color: #bbb; }
-        .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 0.75rem; padding: 6px 0; border-top: 1px solid #333; }
+        .stat-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; font-size: 0.8rem; padding: 6px 0; border-top: 1px solid #333; }
         label { font-size: 0.7rem; color: #888; display: block; text-align: left; margin-left: 5px; }
         .toggle-box { background: #2d2d2d; padding: 10px; border-radius: 8px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
     </style>
@@ -37,52 +41,61 @@
 <div id="modalOverlay">
     <div class="modal">
         <h2 style="color: #fbc02d;">Завершение заезда</h2>
+        <div id="prevOdoHint" style="font-size: 0.7rem; color: #ff9800; text-align: left; margin-bottom: 5px;"></div>
         <div class="grid">
-            <div><label>Пробег (км)</label><input type="number" id="modalDist" placeholder="км"></div>
+            <div><label>Одометр сейчас</label><input type="number" id="modalOdo" placeholder="км"></div>
             <div><label>Ср. скорость</label><input type="number" id="modalSpeed" placeholder="км/ч"></div>
         </div>
+        
         <div class="toggle-box">
             <span>⛽ Бак выкатан в 0?</span>
             <input type="checkbox" id="isEmpty" style="width: 25px; height: 25px;" onchange="toggleLeftover()" checked>
         </div>
+
         <div id="leftoverBox" style="display:none; text-align: left;">
-            <label>Осталось в баке (л)</label>
-            <input type="number" id="modalLeft" placeholder="Сколько осталось">
+            <label>Осталось в баке (литров)</label>
+            <input type="number" id="modalLeft" placeholder="л">
             <button class="small" onclick="document.getElementById('modalLeft').value=6">⛽ Лампа (~6л)</button>
         </div>
+
         <label style="margin-top:10px;">Цикл езды</label>
         <div class="mode-buttons">
-            <div class="mode-btn" onclick="selectMode('City', this)">🏙️ Город</div>
-            <div class="mode-btn" onclick="selectMode('Highway', this)">🛣️ Трасса</div>
-            <div class="mode-btn" onclick="selectMode('Mixed', this)">🔄 Смеш.</div>
+            <div class="mode-btn" onclick="selectMode('City', this)">🏙️<br>Город</div>
+            <div class="mode-btn" onclick="selectMode('Highway', this)">🛣️<br>Трасса</div>
+            <div class="mode-btn" onclick="selectMode('Mixed', this)">🔄<br>Смеш.</div>
         </div>
-        <button onclick="finishEntry()">СОХРАНИТЬ ДАННЫЕ</button>
+        <button onclick="finishEntry()">СОХРАНИТЬ</button>
         <button class="alt" onclick="closeModal()">ОТМЕНА</button>
     </div>
 </div>
 
 <div class="card">
-    <h2>Заправка</h2>
+    <h2>Новая заправка</h2>
     <div class="grid">
         <div><label>Дата</label><input type="date" id="fDate"></div>
-        <div><label>Залил литров</label><input type="number" id="fLiters"></div>
+        <div><label>Литры</label><input type="number" id="fLiters" placeholder="Сколько залил"></div>
     </div>
-    <label>Сумма BYN</label><input type="number" id="fCost">
-    <input type="text" id="fNote" placeholder="Заметка...">
-    <button onclick="addFuel()">ДОБАВИТЬ</button>
+    <div class="grid">
+        <div><label>Сумма BYN</label><input type="number" id="fCost" placeholder="Сумма"></div>
+        <div><label>Одометр на АЗС</label><input type="number" id="fStartOdo" placeholder="Пробег авто"></div>
+    </div>
+    <label>Заметка</label>
+    <input type="text" id="fNote" placeholder="АЗС, АИ-95, нюансы...">
+    <button onclick="addFuel()">ДОБАВИТЬ В ЖУРНАЛ</button>
 </div>
 
 <div id="stats" class="card">
-    <h2>Статистика</h2>
+    <h2>Общая статистика</h2>
     <div id="totalSummary"></div>
 </div>
 
 <div id="logs"></div>
 
 <script>
-    let fuelLog = JSON.parse(localStorage.getItem('rio_final_log')) || [];
+    let fuelLog = JSON.parse(localStorage.getItem('rio_pro_odo_log')) || [];
     let curId = null;
     let curMode = null;
+    const modeLabels = { 'City': '🏙️ Город', 'Highway': '🛣️ Трасса', 'Mixed': '🔄 Смеш.' };
 
     document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
 
@@ -99,31 +112,53 @@
     function addFuel() {
         const l = parseFloat(document.getElementById('fLiters').value);
         const c = parseFloat(document.getElementById('fCost').value);
-        if(!l || !c) return alert('Заполни литры и цену!');
+        const o = parseFloat(document.getElementById('fStartOdo').value);
+        if(!l || !c || !o) return alert('Заполни литры, сумму и одометр!');
+
         fuelLog.unshift({
             id: Date.now(), date: new Date(document.getElementById('fDate').value).toLocaleDateString(),
-            liters: l, cost: c, dist: null, mode: null, speed: null, left: 0, isCompleted: false, note: document.getElementById('fNote').value
+            liters: l, cost: c, startOdo: o, endOdo: null, mode: null, speed: null, left: 0, 
+            note: document.getElementById('fNote').value, isCompleted: false
         });
         save();
+        document.getElementById('fLiters').value = '';
+        document.getElementById('fCost').value = '';
+        document.getElementById('fNote').value = '';
     }
 
-    function openModal(id) { curId = id; document.getElementById('modalOverlay').style.display = 'flex'; }
-    function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; curMode = null; }
+    function openModal(id) { 
+        curId = id; 
+        const item = fuelLog.find(x => x.id === id);
+        document.getElementById('prevOdoHint').innerText = `Одометр на старте: ${item.startOdo} км`;
+        document.getElementById('modalOverlay').style.display = 'flex'; 
+    }
+
+    function closeModal() { 
+        document.getElementById('modalOverlay').style.display = 'none'; 
+        curMode = null;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    }
 
     function finishEntry() {
-        const d = parseFloat(document.getElementById('modalDist').value);
+        const endOdo = parseFloat(document.getElementById('modalOdo').value);
         const l = document.getElementById('isEmpty').checked ? 0 : parseFloat(document.getElementById('modalLeft').value || 0);
-        if(!d || !curMode) return alert('Введи пробег и выбери цикл!');
+        if(!endOdo || !curMode) return alert('Введи одометр и выбери цикл!');
+        
         const i = fuelLog.findIndex(x => x.id === curId);
-        fuelLog[i] = {...fuelLog[i], dist: d, mode: curMode, left: l, speed: document.getElementById('modalSpeed').value, isCompleted: true};
+        if(endOdo <= fuelLog[i].startOdo) return alert('Одометр в конце должен быть больше, чем на старте!');
+
+        fuelLog[i] = {
+            ...fuelLog[i], 
+            endOdo: endOdo, 
+            mode: curMode, 
+            left: l, 
+            speed: document.getElementById('modalSpeed').value, 
+            isCompleted: true
+        };
         save(); closeModal();
     }
 
-    function save() {
-        localStorage.setItem('rio_final_log', JSON.stringify(fuelLog));
-        render();
-    }
-
+    function save() { localStorage.setItem('rio_pro_odo_log', JSON.stringify(fuelLog)); render(); }
     function deleteEntry(id) { if(confirm('Удалить?')) { fuelLog = fuelLog.filter(x => x.id !== id); save(); } }
 
     function render() {
@@ -137,25 +172,30 @@
             tCash += item.cost;
             let html = `<div class="log-item ${!item.isCompleted ? 'pending' : ''}">
                 <button class="del" onclick="deleteEntry(${item.id})">×</button>
-                <div>${item.date} ${item.mode ? `<b style="font-size:10px; background:#444; padding:2px 5px; border-radius:4px;">${item.mode}</b>` : ''}</div>
-                <div class="val">${item.liters}л за ${item.cost} BYN</div>`;
+                <div>${item.date} ${item.mode ? `<span class="mode-tag">${modeLabels[item.mode]}</span>` : ''}</div>
+                <div class="val">${item.liters}л / ${item.cost} BYN</div>`;
             
             if(item.isCompleted) {
+                const dist = item.endOdo - item.startOdo;
                 const used = item.liters - item.left;
-                tDist += item.dist; tLiters += used;
-                cStats[item.mode].l += used; cStats[item.mode].d += item.dist; cStats[item.mode].c += item.cost;
-                html += `<div class="meta" style="color:#4caf50">Расход: <b>${((used/item.dist)*100).toFixed(1)}</b> л/100км</div>`;
+                tDist += dist; tLiters += used;
+                cStats[item.mode].l += used; cStats[item.mode].d += dist; cStats[item.mode].c += item.cost;
+                
+                html += `<div class="meta" style="color:#4caf50">Расход: <b>${((used/dist)*100).toFixed(1)}</b> л/100км (${dist} км)</div>`;
+                if(item.speed) html += `<div class="meta">Ср. скорость: ${item.speed} км/ч</div>`;
             } else {
-                html += `<button class="edit" onclick="openModal(${item.id})">ВНЕСТИ ПРОБЕГ</button>`;
+                html += `<button class="edit" onclick="openModal(${item.id})">ВНЕСТИ ФИНАЛЬНЫЙ ОДОМЕТР</button>`;
             }
+            if(item.note) html += `<div class="meta" style="color:#eee italic">Заметка: ${item.note}</div>`;
             container.innerHTML += html + `</div>`;
         });
 
-        let statsHTML = `<div class="summary"><span>Траты:</span> <b>${tCash.toFixed(1)} BYN</b></div>
-                         <div class="summary"><span>Ср. расход:</span> <b>${tDist > 0 ? ((tLiters/tDist)*100).toFixed(1) : 0} л</b></div>`;
+        let statsHTML = `<div class="summary"><span>Всего потрачено:</span> <b>${tCash.toFixed(1)} BYN</b></div>
+                         <div class="summary"><span>Общий ср. расход:</span> <b>${tDist > 0 ? ((tLiters/tDist)*100).toFixed(1) : 0} л</b></div>
+                         <div style="margin:10px 0 5px 0; color:#ff5252; font-size:0.7rem; font-weight:bold;">АНАЛИТИКА ПО ЦИКЛАМ:</div>`;
         for (let m in cStats) {
             if (cStats[m].d > 0) {
-                statsHTML += `<div class="stat-row"><span>${m}</span><b>${((cStats[m].l/cStats[m].d)*100).toFixed(1)} л</b><b>${cStats[m].c.toFixed(0)} BYN</b></div>`;
+                statsHTML += `<div class="stat-row"><span>${modeLabels[m]}</span><b style="color:#4caf50">${((cStats[m].l/cStats[m].d)*100).toFixed(1)} л</b><b>${cStats[m].c.toFixed(0)} BYN</b></div>`;
             }
         }
         statsBox.innerHTML = statsHTML;
@@ -164,4 +204,4 @@
 </script>
 </body>
 </html>
-
+ 
