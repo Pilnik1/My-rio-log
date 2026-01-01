@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -40,6 +39,7 @@
                 <option value="City">🏙️ Город</option>
                 <option value="Highway">🛣️ Трасса</option>
                 <option value="Mixed">🔄 Смешанный</option>
+                <option value="Later">⏳ Добавить позже</option>
             </select>
         </div>
     </div>
@@ -72,7 +72,7 @@
     document.getElementById('serviceDate').value = today;
 
     let fuelLog = JSON.parse(localStorage.getItem('rio_pro_log')) || [];
-    const modeLabels = { 'City': '🏙️ Город', 'Highway': '🛣️ Трасса', 'Mixed': '🔄 Смеш.' };
+    const modeLabels = { 'City': '🏙️ Город', 'Highway': '🛣️ Трасса', 'Mixed': '🔄 Смеш.', 'Later': '⏳ Позже' };
 
     function addFuel() {
         const liters = parseFloat(document.getElementById('liters').value);
@@ -93,7 +93,7 @@
             mode: mode,
             speed: parseFloat(document.getElementById('speed').value) || null,
             note: document.getElementById('note').value,
-            isCompleted: !!dist
+            isCompleted: !!dist && mode !== 'Later'
         };
         
         save(entry);
@@ -115,9 +115,16 @@
     function completeDist(id) {
         const km = prompt("Введите пройденное расстояние (км):");
         if (km === null || km === "") return;
+        
+        const modeChoice = prompt("Выберите цикл: 1 - Город, 2 - Трасса, 3 - Смешанный");
+        let newMode = 'Mixed';
+        if (modeChoice === '1') newMode = 'City';
+        if (modeChoice === '2') newMode = 'Highway';
+
         const index = fuelLog.findIndex(item => item.id === id);
         if (index !== -1) {
             fuelLog[index].dist = parseFloat(km);
+            fuelLog[index].mode = newMode;
             fuelLog[index].isCompleted = true;
             localStorage.setItem('rio_pro_log', JSON.stringify(fuelLog));
             render();
@@ -171,8 +178,8 @@
                     `;
                 } else {
                     content += `
-                        <div class="meta" style="color: #ffeb3b;">Ожидание пробега...</div>
-                        <button class="edit" onclick="completeDist(${item.id})">ВНЕСТИ ПРОБЕГ</button>
+                        <div class="meta" style="color: #ffeb3b;">Ожидание данных...</div>
+                        <button class="edit" onclick="completeDist(${item.id})">ВНЕСТИ ДАННЫЕ</button>
                     `;
                 }
                 if(item.note) content += `<div class="meta">Заметка: ${item.note}</div>`;
