@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoLog: Режимы и Расход</title>
+    <title>Universal AutoLog: Режимы и Расход</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #121212; color: #e0e0e0; padding: 10px; line-height: 1.4; }
         .card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
@@ -26,17 +26,33 @@
 <div class="card" style="border-color: #2196f3;">
     <h2>🚗 Мой Автомобиль</h2>
     <select id="carBrand" onchange="saveCarInfo()">
-        <option value="Kia">Kia</option>
+        <option value="">Выберите марку</option>
+        <option value="Audi">Audi</option>
+        <option value="BMW">BMW</option>
+        <option value="Citroen">Citroen</option>
+        <option value="Ford">Ford</option>
+        <option value="Geely">Geely</option>
+        <option value="Honda">Honda</option>
         <option value="Hyundai">Hyundai</option>
-        <option value="Volkswagen">Volkswagen</option>
+        <option value="Kia">Kia</option>
+        <option value="Lada">Lada</option>
+        <option value="Mazda">Mazda</option>
+        <option value="Mercedes">Mercedes</option>
+        <option value="Mitsubishi">Mitsubishi</option>
+        <option value="Nissan">Nissan</option>
+        <option value="Opel">Opel</option>
+        <option value="Peugeot">Peugeot</option>
+        <option value="Renault">Renault</option>
+        <option value="Skoda">Skoda</option>
         <option value="Toyota">Toyota</option>
-        <option value="Other">Другая марка</option>
+        <option value="Volkswagen">Volkswagen</option>
+        <option value="Volvo">Volvo</option>
     </select>
-    <input type="text" id="carModel" placeholder="Модель (напр. Rio 3)" oninput="saveCarInfo()">
+    <input type="text" id="carModel" placeholder="Модель (например, Rio 3)" oninput="saveCarInfo()">
 </div>
 
 <div class="card">
-    <h2>⛽ Новая запись</h2>
+    <h2>⛽ Новая заправка</h2>
     <input type="date" id="fuelDate">
     <div class="grid">
         <input type="number" id="liters" placeholder="Литры">
@@ -54,7 +70,7 @@
     <button onclick="addFuel()">ДОБАВИТЬ ЗАПИСЬ</button>
 </div>
 
-<div class="card">
+<div id="stats" class="card">
     <h2>📊 Статистика <span id="displayCar"></span></h2>
     <div id="totalSummary"></div>
 </div>
@@ -71,11 +87,14 @@
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('fuelDate').value = today;
 
+    // Поддержка обоих ключей хранилища для совместимости
     let fuelLog = JSON.parse(localStorage.getItem('universal_car_log')) || [];
-    let carInfo = JSON.parse(localStorage.getItem('car_info')) || { brand: 'Kia', model: 'Rio 3' };
+    let carInfo = JSON.parse(localStorage.getItem('car_info')) || { brand: '', model: '' };
 
     document.getElementById('carBrand').value = carInfo.brand;
     document.getElementById('carModel').value = carInfo.model;
+
+    const modeLabels = { 'City': '🏙️ Город', 'Highway': '🛣️ Трасса', 'Mixed': '🔄 Смеш.' };
 
     function saveCarInfo() {
         carInfo.brand = document.getElementById('carBrand').value;
@@ -84,15 +103,13 @@
         render();
     }
 
-    const modeLabels = { 'City': '🏙️ Город', 'Highway': '🛣️ Трасса', 'Mixed': '🔄 Смеш.' };
-
     function addFuel() {
         const liters = parseFloat(document.getElementById('liters').value);
         const cost = parseFloat(document.getElementById('cost').value);
         const dist = parseFloat(document.getElementById('dist').value);
         const mode = document.getElementById('driveMode').value;
         
-        if(!liters || !cost) return alert('Введите данные!');
+        if(!liters || !cost) return alert('Введи данные!');
 
         const entry = {
             id: Date.now(),
@@ -126,14 +143,15 @@
     }
 
     function deleteEntry(id) {
-        if(confirm('Удалить запись?')) {
+        if(confirm('Удалить?')) {
             fuelLog = fuelLog.filter(i => i.id !== id);
             save();
         }
     }
 
     function exportData() {
-        const blob = new Blob([JSON.stringify({logs: fuelLog, car: carInfo})], {type: "application/json"});
+        const data = { logs: fuelLog, car: carInfo };
+        const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `car_log_backup.json`;
@@ -147,8 +165,9 @@
         reader.onload = (e) => {
             const imported = JSON.parse(e.target.result);
             fuelLog = imported.logs || [];
-            carInfo = imported.car || carInfo;
-            saveCarInfo(); save();
+            carInfo = imported.car || { brand: '', model: '' };
+            saveCarInfo();
+            save();
         };
         reader.readAsText(event.target.files[0]);
     }
@@ -179,8 +198,8 @@
         });
 
         statsBox.innerHTML = `
-            <div class="summary"><span>Всего трат:</span> <b>${tCash.toFixed(2)} BYN</b></div>
-            <div class="summary"><span>Средний за всё время:</span> <b>${tDist > 0 ? ((tLiters/tDist)*100).toFixed(1) : 0} л/100км</b></div>
+            <div class="summary"><span>Траты:</span> <b>${tCash.toFixed(2)} BYN</b></div>
+            <div class="summary"><span>Ср. расход:</span> <b>${tDist > 0 ? ((tLiters/tDist)*100).toFixed(1) : 0} л/100км</b></div>
         `;
     }
     render();
